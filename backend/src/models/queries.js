@@ -46,7 +46,20 @@ const createSlope = (name, description, lat, lng) =>
     [name, description, lng, lat]
   );
 
-const getAllSlopes = () => query(`SELECT * FROM slopes`);
+  const getAllSlopes = () =>
+    query(`
+      SELECT 
+        id, 
+        name, 
+        description, 
+        risk_level,
+        ST_Y(location::geometry) AS lat,
+        ST_X(location::geometry) AS lng,
+        created_at
+      FROM slopes
+      ORDER BY created_at DESC
+    `);
+  
 
 const getSlopeById = (id) =>
   query(`SELECT * FROM slopes WHERE id = $1`, [id]);
