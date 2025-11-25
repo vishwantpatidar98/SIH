@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRequireRole } from '../../../hooks/useRoles'
-import api from '../../../services/api'
+import { adminService } from '../../../services/admin'
 import Navbar from '../../../components/Navbar'
 import Sidebar from '../../../components/Sidebar'
 import Card from '../../../components/Card'
@@ -21,14 +21,8 @@ export default function AdminRolesPage() {
 
   const loadRoles = async () => {
     try {
-      // TODO: Replace with actual roles endpoint when available
-      // For now, using hardcoded roles
-      setRoles([
-        { id: 1, name: 'super_admin', description: 'Full system access' },
-        { id: 2, name: 'site_admin', description: 'Site management access' },
-        { id: 3, name: 'field_worker', description: 'Field worker access' },
-        { id: 4, name: 'gov_authority', description: 'Government authority access' },
-      ])
+      const data = await adminService.getRoles()
+      setRoles(data)
     } catch (error) {
       console.error('Failed to load roles:', error)
     } finally {
@@ -49,6 +43,7 @@ export default function AdminRolesPage() {
     {
       header: 'Description',
       key: 'description',
+      render: (val) => val || 'No description provided',
     },
   ]
 

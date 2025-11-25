@@ -14,6 +14,7 @@ export default function MLExplainPage() {
   const [selectedSlope, setSelectedSlope] = useState('')
   const [predictionId, setPredictionId] = useState('')
   const [explanation, setExplanation] = useState(null)
+  const [mlStatus, setMlStatus] = useState(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -40,22 +41,16 @@ export default function MLExplainPage() {
     setLoading(true)
     try {
       const result = await mlService.explain(selectedSlope, predictionId)
-      setExplanation(result)
+      setMlStatus(result)
+      setExplanation(result?.data || null)
     } catch (error) {
       console.error('Explanation failed:', error)
-      // Placeholder data
-      setExplanation({
-        shap_values: {
-          tilt_angle: 0.3,
-          rainfall: 0.2,
-          vibration: 0.15,
-        },
-        feature_importance: {
-          tilt_angle: 'High',
-          rainfall: 'Medium',
-          vibration: 'Low',
-        },
+      setMlStatus({
+        ok: false,
+        implemented: false,
+        message: 'Unable to generate ML explanation',
       })
+      setExplanation(null)
     } finally {
       setLoading(false)
     }
@@ -78,7 +73,8 @@ export default function MLExplainPage() {
             >
               <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> ML service integration is pending. SHAP explanations will be available once backend ML service is implemented.
+                  <strong>Note:</strong>{' '}
+                  {mlStatus?.message || 'ML is not integrated yet — placeholder only. Explainability results will appear once integration is complete.'}
                 </p>
               </div>
 

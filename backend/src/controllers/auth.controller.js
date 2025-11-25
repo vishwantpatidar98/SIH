@@ -37,6 +37,7 @@ const register = async (req, res, next) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const createdUser = await createUser(roleId, name, email, phone, passwordHash);
     const user = sanitizeUser(createdUser.rows[0]);
+    user.role_name = role.rows[0].name;
 
     return res.status(201).json({
       success: true,
@@ -78,10 +79,15 @@ const login = async (req, res, next) => {
       { expiresIn: '1d' }
     );
 
+    const roleResult = await getRoleById(user.role_id);
+    const roleName = roleResult.rowCount > 0 ? roleResult.rows[0].name : null;
+    const safeUser = sanitizeUser(user);
+    safeUser.role_name = roleName;
+
     return res.json({
       success: true,
       token,
-      data: sanitizeUser(user)
+      data: safeUser
     });
   } catch (error) {
     next(error);

@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { adminService } from '../../services/admin'
-import api from '../../services/api'
+import { slopesService } from '../../services/slopes'
 
 // Fix for default marker icons in Next.js
 delete L.Icon.Default.prototype._getIconUrl
@@ -22,17 +21,14 @@ export default function MapView() {
   useEffect(() => {
     const fetchSlopes = async () => {
       try {
-        // Backend returns slopes with PostGIS location data
-        // TODO: Backend needs to parse PostGIS POINT and return lat/lng
-        const response = await adminService.getSlopes()
-        const slopesData = (response.data.data || []).map((slope) => ({
-          ...slope,
-          // TODO: Parse PostGIS location when backend returns parsed coordinates
-          // Backend should extract ST_X(location) as lng and ST_Y(location) as lat
-          lat: slope.lat ?? (slope.location?.coordinates?.[1]) ?? 20.5937,
-          lng: slope.lng ?? (slope.location?.coordinates?.[0]) ?? 78.9629
-        }))
-        setSlopes(slopesData)
+        const slopesData = await slopesService.getAll()
+        setSlopes(
+          slopesData.map((slope) => ({
+            ...slope,
+            lat: Number(slope.lat) || 20.5937,
+            lng: Number(slope.lng) || 78.9629,
+          }))
+        )
       } catch (error) {
         console.error('Failed to fetch slopes:', error)
       }

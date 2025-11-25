@@ -34,6 +34,7 @@ export default function MLForecastPage() {
   const [slopes, setSlopes] = useState([])
   const [selectedSlope, setSelectedSlope] = useState('')
   const [forecast, setForecast] = useState(null)
+  const [mlStatus, setMlStatus] = useState(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -60,14 +61,16 @@ export default function MLForecastPage() {
     setLoading(true)
     try {
       const result = await mlService.forecast(selectedSlope)
-      setForecast(result)
+      setMlStatus(result)
+      setForecast(result?.data || null)
     } catch (error) {
       console.error('Forecast failed:', error)
-      // Placeholder data
-      setForecast({
-        forecast: [0.3, 0.4, 0.5, 0.6, 0.7],
-        timestamps: ['+24h', '+48h', '+72h', '+96h', '+120h'],
+      setMlStatus({
+        ok: false,
+        implemented: false,
+        message: 'Unable to generate ML forecast',
       })
+      setForecast(null)
     } finally {
       setLoading(false)
     }
@@ -103,7 +106,8 @@ export default function MLForecastPage() {
             >
               <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> ML service integration is pending. Forecasts will be available once backend ML service is implemented.
+                  <strong>Note:</strong>{' '}
+                  {mlStatus?.message || 'ML is not integrated yet — placeholder only. Forecasts will appear once integration is complete.'}
                 </p>
               </div>
 

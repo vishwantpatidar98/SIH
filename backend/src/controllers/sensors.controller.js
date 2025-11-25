@@ -93,11 +93,33 @@ const getReadings = async (req, res, next) => {
   }
 };
 
+const getSensor = async (req, res, next) => {
+  try {
+    const { sensorId } = req.params;
+    const sensor = await getSensorById(sensorId);
+
+    if (sensor.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sensor not found'
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: sensor.rows[0]
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   listSensors,
   addSensor,
   addReading,
-  getReadings
+  getReadings,
+  getSensor
 };
 
 

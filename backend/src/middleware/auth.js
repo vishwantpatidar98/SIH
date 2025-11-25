@@ -3,10 +3,32 @@ const jwt = require('jsonwebtoken');
 const config = require('../config/env');
 const { getUserById, getRoleById } = require('../models/queries');
 
+const ROLE_CODE = {
+  FIELD_WORKER: 'field_worker',
+  SITE_ADMIN: 'site_admin',
+  SUPER_ADMIN: 'super_admin',
+  GOV_AUTHORITY: 'gov_authority'
+};
+const ROLE_VALUES = Object.values(ROLE_CODE);
+
 const extractToken = (req) => {
   const header = req.headers.authorization || '';
   if (header.startsWith('Bearer ')) {
     return header.substring(7);
+  }
+  return null;
+};
+
+const normalizeRole = (role) => {
+  if (!role) return null;
+  const asString = String(role);
+  const upper = asString.toUpperCase();
+  if (ROLE_CODE[upper]) {
+    return ROLE_CODE[upper];
+  }
+  const lower = asString.toLowerCase();
+  if (ROLE_VALUES.includes(lower)) {
+    return lower;
   }
   return null;
 };
@@ -36,7 +58,8 @@ const requireAuth = async (req, res, next) => {
 
     req.user = {
       ...user,
-      role_name: roleName
+      role_name: roleName,
+      role_code: normalizeRole(roleName)
     };
 
     next();
@@ -49,17 +72,34 @@ const requireAuth = async (req, res, next) => {
   }
 };
 
-const authorizeRoles = (...roles) => (req, res, next) => {
-  if (!req.user || !roles.includes(req.user.role_name)) {
+const requireRole = (...roles) => (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized'
+    });
+  }
+
+  const normalizedUserRole = normalizeRole(req.user.role_name);
+  const allowedRoles = roles.length > 0
+    ? roles.map(normalizeRole).filter(Boolean)
+    : [];
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(normalizedUserRole)) {
     return res.status(403).json({
       success: false,
       message: 'Forbidden'
     });
   }
+
   next();
 };
 
+const authorizeRoles = (...roles) => requireRole(...roles);
+
 module.exports = {
   requireAuth,
-  authorizeRoles
+  requireRole,
+  authorizeRoles,
+  ROLE_CODE
 };

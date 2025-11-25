@@ -1,20 +1,21 @@
 const express = require('express');
 
 const govtController = require('../controllers/govt.controller');
-const { requireAuth, authorizeRoles } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
 router.post(
   '/advisories',
   requireAuth,
-  authorizeRoles('gov_authority', 'super_admin'),
+  requireRole('GOV_AUTHORITY', 'SUPER_ADMIN'),
   govtController.postAdvisory
 );
 
 router.get(
   '/advisories',
   requireAuth,
+  requireRole('GOV_AUTHORITY', 'SUPER_ADMIN', 'SITE_ADMIN'),
   govtController.getAdvisories
 );
 

@@ -33,12 +33,13 @@ export default function AdminUsersPage() {
   }
 
   const loadRoles = async () => {
-    setRoles([
-      { id: 1, name: 'super_admin' },
-      { id: 2, name: 'site_admin' },
-      { id: 3, name: 'field_worker' },
-      { id: 4, name: 'gov_authority' },
-    ])
+    try {
+      const data = await adminService.getRoles()
+      setRoles(data)
+    } catch (error) {
+      console.error('Failed to load roles:', error)
+      setRoles([])
+    }
   }
 
   const handleRoleChange = async (userId, newRoleId) => {

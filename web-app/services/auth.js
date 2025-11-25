@@ -9,17 +9,16 @@ export const authService = {
         throw new Error(res.data?.message || 'Invalid credentials')
       }
   
-      // Role mapping (IMPORTANT for Sidebar + Role-based routing)
-      const roleNameMap = {
-        1: "super_admin",
-        2: "site_admin",
-        3: "field_worker",
-        4: "gov_authority",
-        5: "citizen"
-      }
-  
       const user = res.data.data
-      user.role_name = roleNameMap[user.role_id]   // 🔥 Add readable role
+      if (!user.role_name && user.role_id) {
+        const roleNameMap = {
+          1: 'field_worker',
+          2: 'site_admin',
+          3: 'gov_authority',
+          4: 'super_admin',
+        }
+        user.role_name = roleNameMap[user.role_id] || user.role_name
+      }
   
       // Save token
       if (typeof window !== 'undefined') {

@@ -6,7 +6,10 @@ const {
   createSlope,
   createTask,
   getAllTasks,
-  updateTaskStatus
+  updateTaskStatus,
+  getSlopeById,
+  updateSlopeDetails,
+  deleteSlope
 } = require('../models/queries');
 
 const listUsers = async (req, res, next) => {
@@ -68,6 +71,67 @@ const createSlopeController = async (req, res, next) => {
   }
 };
 
+const getSlopeController = async (req, res, next) => {
+  try {
+    const { slopeId } = req.params;
+    const slope = await getSlopeById(slopeId);
+
+    if (slope.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Slope not found'
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: slope.rows[0]
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateSlopeController = async (req, res, next) => {
+  try {
+    const { slopeId } = req.params;
+    const { name = null, description = null, lat = null, lng = null } = req.body;
+    const latValueRaw =
+      lat === undefined || lat === null || lat === ''
+        ? null
+        : Number(lat);
+    const lngValueRaw =
+      lng === undefined || lng === null || lng === ''
+        ? null
+        : Number(lng);
+
+    const latValue = Number.isNaN(latValueRaw) ? null : latValueRaw;
+    const lngValue = Number.isNaN(lngValueRaw) ? null : lngValueRaw;
+
+    const updated = await updateSlopeDetails(
+      slopeId,
+      name ?? null,
+      description ?? null,
+      latValue,
+      lngValue
+    );
+
+    if (updated.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Slope not found'
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: updated.rows[0]
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const updateSlopeRiskController = async (req, res, next) => {
   try {
     const { slopeId } = req.params;
@@ -84,6 +148,27 @@ const updateSlopeRiskController = async (req, res, next) => {
     return res.json({
       success: true,
       data: updated.rows[0]
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteSlopeController = async (req, res, next) => {
+  try {
+    const { slopeId } = req.params;
+    const deleted = await deleteSlope(slopeId);
+
+    if (deleted.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Slope not found'
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: deleted.rows[0]
     });
   } catch (error) {
     next(error);
@@ -144,7 +229,10 @@ module.exports = {
   changeUserRole,
   listSlopes,
   createSlope: createSlopeController,
+  getSlope: getSlopeController,
+  updateSlope: updateSlopeController,
   updateSlopeRisk: updateSlopeRiskController,
+  deleteSlope: deleteSlopeController,
   listTasks,
   createTask: createTaskController,
   updateTaskStatus: updateTaskStatusController

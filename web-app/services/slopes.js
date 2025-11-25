@@ -28,7 +28,7 @@ export const slopesService = {
 
   async delete(slopeId) {
     const response = await api.delete(`/admin/slopes/${slopeId}`)
-    return response.data
+    return response.data.data
   },
 }
 

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRequireRole } from '../../../hooks/useRoles'
 import { mlService } from '../../../services/ml'
-import api from '../../../services/api'
 import Navbar from '../../../components/Navbar'
 import Sidebar from '../../../components/Sidebar'
 import Card from '../../../components/Card'
@@ -13,6 +12,7 @@ import RiskIndicator from '../../../components/RiskIndicator'
 export default function AdminMLPage() {
   const { hasAccess } = useRequireRole(['site_admin', 'super_admin'])
   const [predictions, setPredictions] = useState([])
+  const [mlStatus, setMlStatus] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -23,15 +23,20 @@ export default function AdminMLPage() {
 
   const loadPredictions = async () => {
     try {
-      // TODO: Replace with actual backend endpoint when ML service is integrated
-      // Backend endpoint: GET /api/ml/predictions
-      // For now, using placeholder data
-      const response = await api.get('/ml/predictions').catch(() => ({ data: { data: [] } }))
-      setPredictions(response.data.data || [])
+      const result = await mlService.getPredictions()
+      setMlStatus(result)
+      const predictionData = Array.isArray(result?.data?.predictions)
+        ? result.data.predictions
+        : result?.data || []
+      setPredictions(predictionData)
     } catch (error) {
       console.error('Failed to load predictions:', error)
-      // Return empty array for now since ML service is not implemented
       setPredictions([])
+      setMlStatus({
+        ok: false,
+        implemented: false,
+        message: 'Unable to load ML predictions',
+      })
     } finally {
       setLoading(false)
     }
@@ -88,7 +93,8 @@ export default function AdminMLPage() {
             >
               <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> ML service integration is pending. This page will show real predictions once the backend ML service is implemented.
+                  <strong>Note:</strong>{' '}
+                  {mlStatus?.message || 'ML is not integrated yet — placeholder only. This dashboard will show real predictions after integration.'}
                 </p>
               </div>
               <Table

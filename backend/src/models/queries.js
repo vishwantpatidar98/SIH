@@ -42,27 +42,89 @@ const createSlope = (name, description, lat, lng) =>
   query(
     `INSERT INTO slopes (name, description, location)
      VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326))
-     RETURNING *`,
+     RETURNING 
+       id,
+       name,
+       description,
+       risk_level,
+       ST_Y(location::geometry) AS lat,
+       ST_X(location::geometry) AS lng,
+       created_at`,
     [name, description, lng, lat]
   );
 
-  const getAllSlopes = () =>
-    query(`
-      SELECT 
-        id, 
-        name, 
-        description, 
-        risk_level,
-        ST_Y(location::geometry) AS lat,
-        ST_X(location::geometry) AS lng,
-        created_at
-      FROM slopes
-      ORDER BY created_at DESC
-    `);
-  
+const getAllSlopes = () =>
+  query(`
+    SELECT 
+      id, 
+      name, 
+      description, 
+      risk_level,
+      ST_Y(location::geometry) AS lat,
+      ST_X(location::geometry) AS lng,
+      created_at
+    FROM slopes
+    ORDER BY created_at DESC
+  `);
 
 const getSlopeById = (id) =>
-  query(`SELECT * FROM slopes WHERE id = $1`, [id]);
+  query(
+    `
+    SELECT 
+      id,
+      name,
+      description,
+      risk_level,
+      ST_Y(location::geometry) AS lat,
+      ST_X(location::geometry) AS lng,
+      created_at
+    FROM slopes
+    WHERE id = $1
+  `,
+    [id]
+  );
+
+const updateSlopeDetails = (id, name, description, lat, lng) =>
+  query(
+    `
+    UPDATE slopes
+    SET
+      name = COALESCE($2, name),
+      description = COALESCE($3, description),
+      location = CASE
+        WHEN $4::numeric IS NOT NULL AND $5::numeric IS NOT NULL
+          THEN ST_SetSRID(ST_MakePoint($5, $4), 4326)
+        ELSE location
+      END
+    WHERE id = $1
+    RETURNING 
+      id,
+      name,
+      description,
+      risk_level,
+      ST_Y(location::geometry) AS lat,
+      ST_X(location::geometry) AS lng,
+      created_at
+  `,
+    [id, name, description, lat, lng]
+  );
+
+const deleteSlope = (id) =>
+  query(
+    `
+    DELETE FROM slopes
+    WHERE id = $1
+    RETURNING 
+      id,
+      name,
+      description,
+      risk_level,
+      ST_Y(location::geometry) AS lat,
+      ST_X(location::geometry) AS lng,
+      created_at
+  `,
+    [id]
+  );
 
 /* ============================================================
    SENSORS
@@ -267,6 +329,8 @@ module.exports = {
   createSlope,
   getAllSlopes,
   getSlopeById,
+  updateSlopeDetails,
+  deleteSlope,
   createSensor,
   getSensorsBySlope,
   getAllSensors,

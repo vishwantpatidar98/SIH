@@ -14,6 +14,8 @@ const alertsRoutes = require('./routes/alerts.routes');
 const complaintsRoutes = require('./routes/complaints.routes');
 const govtRoutes = require('./routes/govt.routes');
 const adminRoutes = require('./routes/admin.routes');
+const mlRoutes = require('./routes/ml.routes');
+const rolesRoutes = require('./routes/roles.routes');
 
 const app = express();
 
@@ -53,6 +55,8 @@ app.use('/api/alerts', alertsRoutes);
 app.use('/api/complaints', complaintsRoutes);
 app.use('/api/govt', govtRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/ml', mlRoutes);
+app.use('/api/roles', rolesRoutes);
 
 // 404 + error handlers
 app.use(notFoundHandler);

@@ -14,6 +14,7 @@ export default function MLPredictionsPage() {
   const [slopes, setSlopes] = useState([])
   const [selectedSlope, setSelectedSlope] = useState('')
   const [prediction, setPrediction] = useState(null)
+  const [mlStatus, setMlStatus] = useState(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -39,19 +40,17 @@ export default function MLPredictionsPage() {
 
     setLoading(true)
     try {
-      // TODO: Replace with actual ML service call when backend is ready
-      // This will call backend which will proxy to FastAPI ML service
       const result = await mlService.predict(selectedSlope, {})
-      setPrediction(result)
+      setMlStatus(result)
+      setPrediction(result?.data || null)
     } catch (error) {
       console.error('Prediction failed:', error)
-      // Show placeholder data
-      setPrediction({
-        risk_score: 0.5,
-        risk_level: 'medium',
-        prediction: {},
-        explainability: {},
+      setMlStatus({
+        ok: false,
+        implemented: false,
+        message: 'Unable to generate ML prediction',
       })
+      setPrediction(null)
     } finally {
       setLoading(false)
     }
@@ -74,7 +73,8 @@ export default function MLPredictionsPage() {
             >
               <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> ML service integration is pending. Predictions will be available once backend ML service is implemented.
+                  <strong>Note:</strong>{' '}
+                  {mlStatus?.message || 'ML is not integrated yet — placeholder only. Predictions will appear once integration is complete.'}
                 </p>
               </div>
 
@@ -114,12 +114,14 @@ export default function MLPredictionsPage() {
                     <div>
                       <p className="text-sm text-gray-600">Risk Score</p>
                       <p className="text-2xl font-bold">
-                        {(prediction.risk_score * 100).toFixed(1)}%
+                        {prediction?.risk_score !== undefined
+                          ? `${(Number(prediction.risk_score) * 100).toFixed(1)}%`
+                          : 'N/A'}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Risk Level</p>
-                      <RiskIndicator riskLevel={prediction.risk_level} />
+                      <RiskIndicator riskLevel={prediction?.risk_level} />
                     </div>
                   </div>
                   {prediction.explainability && Object.keys(prediction.explainability).length > 0 && (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRequireRole } from '../../../hooks/useRoles'
-import api from '../../../services/api'
+import { adminService } from '../../../services/admin'
 import Navbar from '../../../components/Navbar'
 import Sidebar from '../../../components/Sidebar'
 import Card from '../../../components/Card'
@@ -21,8 +21,8 @@ export default function AdminTasksPage() {
 
   const loadTasks = async () => {
     try {
-      const response = await api.get('/admin/tasks')
-      setTasks(response.data.data || [])
+      const data = await adminService.getTasks()
+      setTasks(data)
     } catch (error) {
       console.error('Failed to load tasks:', error)
     } finally {

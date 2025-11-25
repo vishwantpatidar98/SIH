@@ -1,17 +1,21 @@
 const express = require('express');
 
 const adminController = require('../controllers/admin.controller');
-const { requireAuth, authorizeRoles } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
-const adminOnly = [requireAuth, authorizeRoles('site_admin', 'super_admin')];
+const adminOnly = [requireAuth, requireRole('SITE_ADMIN', 'SUPER_ADMIN')];
+const slopeReaders = [requireAuth, requireRole('FIELD_WORKER', 'SITE_ADMIN', 'SUPER_ADMIN')];
 
 router.get('/users', ...adminOnly, adminController.listUsers);
 router.patch('/users/:userId/role', ...adminOnly, adminController.changeUserRole);
 
-router.get('/slopes', ...adminOnly, adminController.listSlopes);
+router.get('/slopes', ...slopeReaders, adminController.listSlopes);
 router.post('/slopes', ...adminOnly, adminController.createSlope);
+router.get('/slopes/:slopeId', ...slopeReaders, adminController.getSlope);
+router.patch('/slopes/:slopeId', ...adminOnly, adminController.updateSlope);
 router.patch('/slopes/:slopeId/risk', ...adminOnly, adminController.updateSlopeRisk);
+router.delete('/slopes/:slopeId', ...adminOnly, adminController.deleteSlope);
 
 router.get('/tasks', ...adminOnly, adminController.listTasks);
 router.post('/tasks', ...adminOnly, adminController.createTask);

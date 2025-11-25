@@ -1,26 +1,28 @@
 const express = require('express');
 
 const alertsController = require('../controllers/alerts.controller');
-const { requireAuth, authorizeRoles } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
 router.post(
   '/',
   requireAuth,
-  authorizeRoles('site_admin', 'super_admin', 'gov_authority'),
+  requireRole('SITE_ADMIN', 'SUPER_ADMIN', 'GOV_AUTHORITY'),
   alertsController.createAlert
 );
 
 router.post(
   '/:alertId/acknowledge',
   requireAuth,
+  requireRole('SITE_ADMIN', 'SUPER_ADMIN', 'GOV_AUTHORITY'),
   alertsController.acknowledge
 );
 
 router.get(
   '/slope/:slopeId',
   requireAuth,
+  requireRole('SITE_ADMIN', 'SUPER_ADMIN', 'GOV_AUTHORITY'),
   alertsController.getAlertsForSlope
 );
 
