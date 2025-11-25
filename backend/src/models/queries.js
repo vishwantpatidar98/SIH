@@ -22,6 +22,21 @@ const getUserByEmail = (email) =>
 const getUserById = (id) =>
   query(`SELECT * FROM users WHERE id = $1`, [id]);
 
+const getUsersCount = () =>
+  query(`SELECT COUNT(*)::int AS count FROM users`);
+
+const getUsersByRole = (roleName) =>
+  query(
+    `SELECT u.*, r.name as role_name
+     FROM users u
+     INNER JOIN roles r ON r.id = u.role_id
+     WHERE r.name = $1`,
+    [roleName]
+  );
+
+const getRoleByName = (name) =>
+  query(`SELECT * FROM roles WHERE name = $1`, [name]);
+
 /* ============================================================
    GOVT AUTHORITIES
 ============================================================ */
@@ -181,6 +196,9 @@ const getComplaintsByUser = (user_id) =>
 const getAllComplaints = () =>
   query(`SELECT * FROM complaints ORDER BY created_at DESC`);
 
+const getComplaintById = (id) =>
+  query(`SELECT * FROM complaints WHERE id = $1`, [id]);
+
 const updateComplaintStatus = (id, status) =>
   query(
     `UPDATE complaints
@@ -283,6 +301,9 @@ const getTasksForUser = (user_id) =>
 const getAllTasks = () =>
   query(`SELECT * FROM tasks ORDER BY created_at DESC`);
 
+const getTaskById = (task_id) =>
+  query(`SELECT * FROM tasks WHERE id = $1`, [task_id]);
+
 const updateTaskStatus = (task_id, status) =>
   query(
     `UPDATE tasks
@@ -318,12 +339,290 @@ const updateSlopeRisk = (slope_id, risk_level) =>
     [risk_level, slope_id]
   );
 
+/* ============================================================
+   TASK ATTACHMENTS & UPDATES
+============================================================ */
+const addTaskAttachment = (task_id, uploaded_by, file_url, file_type) =>
+  query(
+    `INSERT INTO task_attachments (task_id, uploaded_by, file_url, file_type)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [task_id, uploaded_by, file_url, file_type]
+  );
+
+const getTaskAttachments = (task_id) =>
+  query(
+    `SELECT * FROM task_attachments
+     WHERE task_id = $1
+     ORDER BY created_at DESC`,
+    [task_id]
+  );
+
+const addTaskUpdate = (task_id, user_id, status, comment, attachment_url) =>
+  query(
+    `INSERT INTO task_updates (task_id, user_id, status, comment, attachment_url)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [task_id, user_id, status, comment, attachment_url]
+  );
+
+const getTaskUpdates = (task_id) =>
+  query(
+    `SELECT tu.*, u.name as user_name
+     FROM task_updates tu
+     LEFT JOIN users u ON u.id = tu.user_id
+     WHERE tu.task_id = $1
+     ORDER BY tu.created_at DESC`,
+    [task_id]
+  );
+
+/* ============================================================
+   COMPLAINT MEDIA & FEEDBACK
+============================================================ */
+const addComplaintMedia = (complaint_id, url, media_type = 'image') =>
+  query(
+    `INSERT INTO complaint_media (complaint_id, url, media_type)
+     VALUES ($1, $2, $3)
+     RETURNING *`,
+    [complaint_id, url, media_type]
+  );
+
+const getComplaintMedia = (complaint_id) =>
+  query(
+    `SELECT * FROM complaint_media
+     WHERE complaint_id = $1
+     ORDER BY created_at ASC`,
+    [complaint_id]
+  );
+
+const addComplaintFeedback = (complaint_id, admin_id, worker_id, message, event_type = 'feedback') =>
+  query(
+    `INSERT INTO complaint_feedback (complaint_id, admin_id, worker_id, message, event_type)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [complaint_id, admin_id, worker_id, message, event_type]
+  );
+
+const getComplaintFeedback = (complaint_id) =>
+  query(
+    `SELECT cf.*, au.name as admin_name, wu.name as worker_name
+     FROM complaint_feedback cf
+     LEFT JOIN users au ON au.id = cf.admin_id
+     LEFT JOIN users wu ON wu.id = cf.worker_id
+     WHERE cf.complaint_id = $1
+     ORDER BY cf.created_at ASC`,
+    [complaint_id]
+  );
+
+/* ============================================================
+   MESSAGING
+============================================================ */
+const findConversation = (gov_user_id, site_admin_id) =>
+  query(
+    `SELECT * FROM conversations
+     WHERE gov_user_id = $1 AND site_admin_id = $2`,
+    [gov_user_id, site_admin_id]
+  );
+
+const createConversation = (gov_user_id, site_admin_id, created_by) =>
+  query(
+    `INSERT INTO conversations (gov_user_id, site_admin_id, created_by)
+     VALUES ($1, $2, $3)
+     RETURNING *`,
+    [gov_user_id, site_admin_id, created_by]
+  );
+
+const getConversationById = (conversation_id) =>
+  query(`SELECT * FROM conversations WHERE id = $1`, [conversation_id]);
+
+const getConversationsForUser = (user_id) =>
+  query(
+    `SELECT c.*, gu.name as gov_name, sa.name as site_admin_name
+     FROM conversations c
+     LEFT JOIN users gu ON gu.id = c.gov_user_id
+     LEFT JOIN users sa ON sa.id = c.site_admin_id
+     WHERE c.gov_user_id = $1 OR c.site_admin_id = $1
+     ORDER BY c.last_message_at DESC`,
+    [user_id]
+  );
+
+const createConversationMessage = (conversation_id, sender_id, body, attachments) =>
+  query(
+    `INSERT INTO conversation_messages (conversation_id, sender_id, body, attachments)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [conversation_id, sender_id, body, attachments]
+  );
+
+const getConversationMessages = (conversation_id, limit = 50) =>
+  query(
+    `SELECT cm.*, u.name as sender_name, r.name as sender_role
+     FROM conversation_messages cm
+     LEFT JOIN users u ON u.id = cm.sender_id
+     LEFT JOIN roles r ON r.id = u.role_id
+     WHERE cm.conversation_id = $1
+     ORDER BY cm.created_at DESC
+     LIMIT $2`,
+    [conversation_id, limit]
+  );
+
+const markConversationMessagesRead = (conversation_id, reader_id) =>
+  query(
+    `UPDATE conversation_messages
+     SET read_at = NOW()
+     WHERE conversation_id = $1 AND sender_id <> $2 AND read_at IS NULL`,
+    [conversation_id, reader_id]
+  );
+
+const touchConversation = (conversation_id) =>
+  query(
+    `UPDATE conversations
+     SET last_message_at = NOW()
+     WHERE id = $1`,
+    [conversation_id]
+  );
+
+/* ============================================================
+   NOTIFICATIONS
+============================================================ */
+const createNotification = (user_id, type, title, body, metadata = {}) =>
+  query(
+    `INSERT INTO notifications (user_id, type, title, body, metadata)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [user_id, type, title, body, metadata]
+  );
+
+const getNotificationsForUser = (user_id, limit = 50) =>
+  query(
+    `SELECT * FROM notifications
+     WHERE user_id = $1
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [user_id, limit]
+  );
+
+const markNotificationRead = (notification_id, user_id) =>
+  query(
+    `UPDATE notifications
+     SET is_read = TRUE
+     WHERE id = $1 AND user_id = $2
+     RETURNING *`,
+    [notification_id, user_id]
+  );
+
+const markAllNotificationsRead = (user_id) =>
+  query(
+    `UPDATE notifications
+     SET is_read = TRUE
+     WHERE user_id = $1 AND is_read = FALSE`,
+    [user_id]
+  );
+
+const enqueueNotification = (notification_id, user_id) =>
+  query(
+    `INSERT INTO notification_queue (notification_id, user_id)
+     VALUES ($1, $2)
+     RETURNING *`,
+    [notification_id, user_id]
+  );
+
+const getQueuedNotifications = (user_id) =>
+  query(
+    `SELECT q.*, n.type, n.title, n.body, n.metadata
+     FROM notification_queue q
+     INNER JOIN notifications n ON n.id = q.notification_id
+     WHERE q.user_id = $1 AND q.sent = FALSE
+     ORDER BY q.created_at ASC`,
+    [user_id]
+  );
+
+const markNotificationQueued = (queue_id) =>
+  query(
+    `UPDATE notification_queue
+     SET sent = TRUE, last_attempt_at = NOW()
+     WHERE id = $1`,
+    [queue_id]
+  );
+
+const getStaleNotifications = (minutes = 10) =>
+  query(
+    `SELECT q.*, n.type, n.title, n.body, n.metadata
+     FROM notification_queue q
+     INNER JOIN notifications n ON n.id = q.notification_id
+     WHERE q.sent = FALSE
+       AND (q.last_attempt_at IS NULL OR NOW() - q.last_attempt_at > ($1 || ' minutes')::interval)`,
+    [minutes]
+  );
+
+const touchNotificationQueue = (queue_id) =>
+  query(
+    `UPDATE notification_queue
+     SET last_attempt_at = NOW()
+     WHERE id = $1`,
+    [queue_id]
+  );
+
+/* ============================================================
+   ADVISORIES
+============================================================ */
+const createAdvisory = (author_id, target_site_admin_id, slope_id, title, message, severity, attachment_url) =>
+  query(
+    `INSERT INTO advisories (author_id, target_site_admin_id, slope_id, title, message, severity, attachment_url)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING *`,
+    [author_id, target_site_admin_id, slope_id, title, message, severity, attachment_url]
+  );
+
+const addAdvisoryAttachment = (advisory_id, file_url, file_type) =>
+  query(
+    `INSERT INTO advisory_attachments (advisory_id, file_url, file_type)
+     VALUES ($1, $2, $3)
+     RETURNING *`,
+    [advisory_id, file_url, file_type]
+  );
+
+const getAdvisories = (filter = {}) => {
+  const conditions = [];
+  const values = [];
+
+  if (filter.siteAdminId) {
+    values.push(filter.siteAdminId);
+    conditions.push(`(target_site_admin_id = $${values.length} OR target_site_admin_id IS NULL)`);
+  }
+  if (filter.authorId) {
+    values.push(filter.authorId);
+    conditions.push(`author_id = $${values.length}`);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  return query(
+    `SELECT a.*, u.name as author_name, sa.name as target_site_admin_name
+     FROM advisories a
+     LEFT JOIN users u ON u.id = a.author_id
+     LEFT JOIN users sa ON sa.id = a.target_site_admin_id
+     ${whereClause}
+     ORDER BY a.created_at DESC`
+  , values);
+};
+
+const getAdvisoryAttachments = (advisory_id) =>
+  query(
+    `SELECT * FROM advisory_attachments
+     WHERE advisory_id = $1`,
+    [advisory_id]
+  );
+
 module.exports = {
   getAllRoles,
   getRoleById,
+  getRoleByName,
   createUser,
   getUserByEmail,
   getUserById,
+  getUsersCount,
+  getUsersByRole,
   createGovAuthority,
   getGovAuthorityByUser,
   createSlope,
@@ -340,6 +639,7 @@ module.exports = {
   createComplaint,
   getComplaintsByUser,
   getAllComplaints,
+  getComplaintById,
   updateComplaintStatus,
   createAlert,
   acknowledgeAlert,
@@ -353,8 +653,38 @@ module.exports = {
   createTask,
   getTasksForUser,
   getAllTasks,
+  getTaskById,
   updateTaskStatus,
   getAllUsers,
   updateUserRole,
-  updateSlopeRisk
+  updateSlopeRisk,
+  addTaskAttachment,
+  getTaskAttachments,
+  addTaskUpdate,
+  getTaskUpdates,
+  addComplaintMedia,
+  getComplaintMedia,
+  addComplaintFeedback,
+  getComplaintFeedback,
+  findConversation,
+  createConversation,
+  getConversationById,
+  getConversationsForUser,
+  createConversationMessage,
+  getConversationMessages,
+  markConversationMessagesRead,
+  touchConversation,
+  createNotification,
+  getNotificationsForUser,
+  markNotificationRead,
+  markAllNotificationsRead,
+  enqueueNotification,
+  getQueuedNotifications,
+  markNotificationQueued,
+  getStaleNotifications,
+  touchNotificationQueue,
+  createAdvisory,
+  addAdvisoryAttachment,
+  getAdvisories,
+  getAdvisoryAttachments
 };

@@ -162,3 +162,118 @@ CREATE TABLE tasks (
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- ==========================================================
+-- 14. TASK ATTACHMENTS & UPDATES
+-- ==========================================================
+CREATE TABLE task_attachments (
+    id SERIAL PRIMARY KEY,
+    task_id INT REFERENCES tasks(id) ON DELETE CASCADE,
+    uploaded_by INT REFERENCES users(id) ON DELETE SET NULL,
+    file_url TEXT NOT NULL,
+    file_type VARCHAR(100),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE task_updates (
+    id SERIAL PRIMARY KEY,
+    task_id INT REFERENCES tasks(id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    status VARCHAR(50),
+    comment TEXT,
+    attachment_url TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ==========================================================
+-- 15. COMPLAINT MEDIA & FEEDBACK
+-- ==========================================================
+CREATE TABLE complaint_media (
+    id SERIAL PRIMARY KEY,
+    complaint_id INT REFERENCES complaints(id) ON DELETE CASCADE,
+    url TEXT NOT NULL,
+    media_type VARCHAR(50) DEFAULT 'image',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE complaint_feedback (
+    id SERIAL PRIMARY KEY,
+    complaint_id INT REFERENCES complaints(id) ON DELETE CASCADE,
+    admin_id INT REFERENCES users(id) ON DELETE SET NULL,
+    worker_id INT REFERENCES users(id) ON DELETE SET NULL,
+    event_type VARCHAR(50) DEFAULT 'feedback',
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ==========================================================
+-- 16. CONVERSATIONS & MESSAGES
+-- ==========================================================
+CREATE TABLE conversations (
+    id SERIAL PRIMARY KEY,
+    gov_user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    site_admin_id INT REFERENCES users(id) ON DELETE CASCADE,
+    created_by INT REFERENCES users(id) ON DELETE SET NULL,
+    last_message_at TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (gov_user_id, site_admin_id)
+);
+
+CREATE TABLE conversation_messages (
+    id SERIAL PRIMARY KEY,
+    conversation_id INT REFERENCES conversations(id) ON DELETE CASCADE,
+    sender_id INT REFERENCES users(id) ON DELETE CASCADE,
+    body TEXT,
+    attachments JSONB,
+    read_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ==========================================================
+-- 17. NOTIFICATIONS & OFFLINE QUEUE
+-- ==========================================================
+CREATE TABLE notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(50),
+    title VARCHAR(255),
+    body TEXT,
+    metadata JSONB,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE notification_queue (
+    id SERIAL PRIMARY KEY,
+    notification_id INT REFERENCES notifications(id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    sent BOOLEAN DEFAULT FALSE,
+    last_attempt_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- offline_messages table (section 10) is now used as the delivery buffer for
+-- websocket reconnects / offline devices.
+
+-- ==========================================================
+-- 18. ADVISORIES & ATTACHMENTS
+-- ==========================================================
+CREATE TABLE advisories (
+    id SERIAL PRIMARY KEY,
+    author_id INT REFERENCES users(id) ON DELETE SET NULL,
+    target_site_admin_id INT REFERENCES users(id) ON DELETE SET NULL,
+    slope_id INT REFERENCES slopes(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    severity VARCHAR(50) DEFAULT 'info',
+    attachment_url TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);   
+
+CREATE TABLE advisory_attachments (
+    id SERIAL PRIMARY KEY,
+    advisory_id INT REFERENCES advisories(id) ON DELETE CASCADE,
+    file_url TEXT NOT NULL,
+    file_type VARCHAR(50),
+    created_at TIMESTAMP DEFAULT NOW()
+);

@@ -30,4 +30,9 @@ export const adminService = {
     const response = await api.patch(`/admin/tasks/${taskId}/status`, { status })
     return response.data.data
   },
+
+  async createSuperAdmin(payload) {
+    const response = await api.post('/admin/create-super-admin', payload)
+    return response.data.data
+  },
 }

@@ -1,3 +1,5 @@
+const bcrypt = require('bcrypt');
+
 const {
   getAllUsers,
   updateUserRole,
@@ -9,8 +11,18 @@ const {
   updateTaskStatus,
   getSlopeById,
   updateSlopeDetails,
-  deleteSlope
+  deleteSlope,
+  getRoleByName,
+  getUserByEmail,
+  createUser,
+  addTaskUpdate
 } = require('../models/queries');
+const { notifyUser } = require('../services/notification.service');
+
+const sanitizeUser = (user) => {
+  const { password_hash, ...rest } = user;
+  return rest;
+};
 
 const listUsers = async (req, res, next) => {
   try {
@@ -177,10 +189,15 @@ const deleteSlopeController = async (req, res, next) => {
 
 const listTasks = async (req, res, next) => {
   try {
+    const { status } = req.query;
     const tasks = await getAllTasks();
+    let data = tasks.rows;
+    if (status) {
+      data = data.filter((task) => task.status === status);
+    }
     return res.json({
       success: true,
-      data: tasks.rows
+      data
     });
   } catch (error) {
     next(error);
@@ -193,6 +210,21 @@ const createTaskController = async (req, res, next) => {
     const assignedBy = req.user?.id || req.body.assignedBy;
 
     const created = await createTask(assignedBy, assignedTo, slopeId, title, description);
+    await addTaskUpdate(created.rows[0].id, assignedBy, 'pending', 'Task assigned', null);
+
+    if (assignedTo) {
+      await notifyUser(req.app, {
+        userId: assignedTo,
+        type: 'task',
+        title: 'New task assigned',
+        body: title,
+        metadata: {
+          taskId: created.rows[0].id,
+          status: 'pending'
+        }
+      });
+    }
+
     return res.status(201).json({
       success: true,
       data: created.rows[0]
@@ -215,9 +247,62 @@ const updateTaskStatusController = async (req, res, next) => {
       });
     }
 
+    await addTaskUpdate(taskId, req.user.id, status, `Status updated to ${status}`, null);
+
+    if (updated.rows[0].assigned_to) {
+      await notifyUser(req.app, {
+        userId: updated.rows[0].assigned_to,
+        type: 'task',
+        title: 'Task status updated',
+        body: `Task "${updated.rows[0].title}" is now ${status}`,
+        metadata: {
+          taskId
+        }
+      });
+    }
+
     return res.json({
       success: true,
       data: updated.rows[0]
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createSuperAdmin = async (req, res, next) => {
+  try {
+    const { name, email, phone, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, and password are required'
+      });
+    }
+
+    const existing = await getUserByEmail(email);
+    if (existing.rowCount > 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'User already exists with this email'
+      });
+    }
+
+    const roleResult = await getRoleByName('super_admin');
+    if (roleResult.rowCount === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Super Admin role not configured'
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const created = await createUser(roleResult.rows[0].id, name, email, phone, passwordHash);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Super Admin created successfully',
+      data: sanitizeUser(created.rows[0])
     });
   } catch (error) {
     next(error);
@@ -235,7 +320,8 @@ module.exports = {
   deleteSlope: deleteSlopeController,
   listTasks,
   createTask: createTaskController,
-  updateTaskStatus: updateTaskStatusController
+  updateTaskStatus: updateTaskStatusController,
+  createSuperAdmin
 };
 
 

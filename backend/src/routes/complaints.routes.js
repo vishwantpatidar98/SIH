@@ -26,11 +26,24 @@ router.get(
   complaintsController.listComplaints
 );
 
+router.get(
+  '/:complaintId',
+  requireAuth,
+  complaintsController.getComplaintDetail
+);
+
 router.patch(
   '/:complaintId/status',
   requireAuth,
   requireRole('SITE_ADMIN', 'SUPER_ADMIN'),
   complaintsController.updateComplaintStatus
+);
+
+router.post(
+  '/:complaintId/feedback',
+  requireAuth,
+  requireRole('SITE_ADMIN', 'SUPER_ADMIN'),
+  complaintsController.addFeedback
 );
 
 module.exports = router;

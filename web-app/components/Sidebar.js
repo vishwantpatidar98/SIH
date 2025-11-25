@@ -12,14 +12,16 @@ export default function Sidebar() {
 
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/tasks', label: 'My Tasks', icon: '📝', roles: ['field_worker', 'site_admin', 'super_admin'] },
     { path: '/complaints', label: 'Complaints', icon: '📸', roles: ['field_worker', 'site_admin', 'super_admin'] },
+    { path: '/messages', label: 'Messages', icon: '💬', roles: ['site_admin', 'gov_authority', 'super_admin'] },
     { path: '/sensors', label: 'Sensors', icon: '📡', roles: ['site_admin', 'super_admin'] },
     { path: '/slopes', label: 'Slopes', icon: '🏔️', roles: ['site_admin', 'super_admin'] },
     { path: '/alerts', label: 'Alerts', icon: '🚨', roles: ['site_admin', 'super_admin', 'gov_authority'] },
     { path: '/ml/predictions', label: 'ML Predictions', icon: '🤖', roles: ['site_admin', 'super_admin'] },
     { path: '/uploads/sensors', label: 'Upload Data', icon: '📤', roles: ['site_admin', 'super_admin'] },
     { path: '/admin', label: 'Admin Panel', icon: '⚙️', roles: ['site_admin', 'super_admin'] },
-    { path: '/govt', label: 'Government', icon: '🏛️', roles: ['gov_authority', 'super_admin'] },
+    { path: '/govt', label: 'Gov Advisories', icon: '🏛️', roles: ['gov_authority', 'super_admin', 'site_admin'] },
     { path: '/profile', label: 'Profile', icon: '👤' },
   ]
 

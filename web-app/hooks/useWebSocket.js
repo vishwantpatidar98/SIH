@@ -9,13 +9,15 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000'
 export function useWebSocket() {
   const { user } = useAuth()
   const [socket, setSocket] = useState(null)
-  const [events, setEvents] = useState([])
+  const [alerts, setAlerts] = useState([])
+  const [notifications, setNotifications] = useState([])
+  const [messages, setMessages] = useState([])
 
   useEffect(() => {
     if (!user) return
 
     const s = io(SOCKET_URL, {
-      auth: { token: localStorage.getItem('token') },
+      auth: { token: typeof window !== 'undefined' ? localStorage.getItem('token') : null },
     })
 
     s.on('connect', () => {
@@ -23,7 +25,15 @@ export function useWebSocket() {
     })
 
     s.on('alert', (data) => {
-      setEvents((prev) => [...prev, data])
+      setAlerts((prev) => [data, ...prev].slice(0, 50))
+    })
+
+    s.on('notification', (data) => {
+      setNotifications((prev) => [data, ...prev])
+    })
+
+    s.on('message:new', (data) => {
+      setMessages((prev) => [data, ...prev])
     })
 
     setSocket(s)
@@ -31,5 +41,5 @@ export function useWebSocket() {
     return () => s.disconnect()
   }, [user])
 
-  return { socket, events }
+  return { socket, alerts, notifications, messages }
 }

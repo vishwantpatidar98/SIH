@@ -9,6 +9,7 @@ router.post(
   '/advisories',
   requireAuth,
   requireRole('GOV_AUTHORITY', 'SUPER_ADMIN'),
+  govtController.upload.array('attachments', 5),
   govtController.postAdvisory
 );
 
