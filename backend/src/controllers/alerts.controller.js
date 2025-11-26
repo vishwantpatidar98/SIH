@@ -1,8 +1,10 @@
 const {
   createAlert,
   acknowledgeAlert,
-  getAlertsBySlope
+  getAlertsBySlope,
+  getUsersByRole
 } = require('../models/queries');
+const { notifyUsers } = require('../services/notification.service');
 
 const createAlertController = async (req, res, next) => {
   try {
@@ -61,10 +63,45 @@ const getAlertsForSlope = async (req, res, next) => {
   }
 };
 
+const raiseSOS = async (req, res, next) => {
+  try {
+    const { message = 'Emergency reported by field worker', slopeId = null } = req.body;
+    const created = await createAlert(slopeId, 'sos', message, 'critical');
+
+    const [siteAdmins, govAuthorities] = await Promise.all([
+      getUsersByRole('site_admin'),
+      getUsersByRole('gov_authority')
+    ]);
+
+    const recipients = [
+      ...siteAdmins.rows.map((user) => user.id),
+      ...govAuthorities.rows.map((user) => user.id)
+    ];
+
+    await notifyUsers(req.app, recipients, {
+      type: 'sos',
+      title: 'SOS Triggered',
+      body: `${req.user.name || 'Field worker'}: ${message}`,
+      metadata: {
+        slopeId,
+        alertId: created.rows[0].id
+      }
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: created.rows[0]
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createAlert: createAlertController,
   acknowledge,
-  getAlertsForSlope
+  getAlertsForSlope,
+  raiseSOS
 };
 
 

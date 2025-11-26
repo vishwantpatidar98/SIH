@@ -2,7 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const { requireAuth } = require('../middleware/auth');
 
-const { register, login } = require('../controllers/auth.controller');
+const { register, login, updateProfile } = require('../controllers/auth.controller');
 const { validateRequest } = require('../middleware/validate');
 
 const router = express.Router();
@@ -10,7 +10,7 @@ const router = express.Router();
 router.post(
   '/register',
   [
-    body('roleId').isInt().withMessage('roleId is required'),
+    body('roleId').optional().isInt().withMessage('roleId must be numeric'),
     body('name').notEmpty().withMessage('name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
     body('phone').notEmpty().withMessage('phone is required'),
@@ -28,6 +28,12 @@ router.post(
   ],
   validateRequest,
   login
+);
+
+router.put(
+  '/me',
+  requireAuth,
+  updateProfile
 );
 
 module.exports = router;

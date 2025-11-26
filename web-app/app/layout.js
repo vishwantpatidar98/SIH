@@ -1,5 +1,6 @@
 import '../styles/globals.css'
 import { AuthProvider } from '../hooks/useAuth'
+import { LanguageProvider } from '../hooks/useLanguage'
 
 export const metadata = {
   title: 'SIH Dashboard',
@@ -10,7 +11,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <LanguageProvider>{children}</LanguageProvider>
+        </AuthProvider>
       </body>
     </html>
   )

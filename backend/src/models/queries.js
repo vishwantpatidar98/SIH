@@ -27,15 +27,37 @@ const getUsersCount = () =>
 
 const getUsersByRole = (roleName) =>
   query(
-    `SELECT u.*, r.name as role_name
+    `SELECT u.*, r.name as role_name, ga.department
      FROM users u
      INNER JOIN roles r ON r.id = u.role_id
+     LEFT JOIN govt_authorities ga ON ga.user_id = u.id
      WHERE r.name = $1`,
     [roleName]
   );
 
 const getRoleByName = (name) =>
   query(`SELECT * FROM roles WHERE name = $1`, [name]);
+
+const updateUserProfile = (user_id, name, phone) =>
+  query(
+    `UPDATE users
+     SET name = COALESCE($2, name),
+         phone = COALESCE($3, phone),
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [user_id, name, phone]
+  );
+
+const updateUserPassword = (user_id, password_hash) =>
+  query(
+    `UPDATE users
+     SET password_hash = $2,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [user_id, password_hash]
+  );
 
 /* ============================================================
    GOVT AUTHORITIES
@@ -53,10 +75,10 @@ const getGovAuthorityByUser = (user_id) =>
 /* ============================================================
    SLOPES
 ============================================================ */
-const createSlope = (name, description, lat, lng) =>
+const createSlope = (name, description, lat, lng, risk_level = 'low') =>
   query(
-    `INSERT INTO slopes (name, description, location)
-     VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326))
+    `INSERT INTO slopes (name, description, location, risk_level)
+     VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5)
      RETURNING 
        id,
        name,
@@ -65,7 +87,7 @@ const createSlope = (name, description, lat, lng) =>
        ST_Y(location::geometry) AS lat,
        ST_X(location::geometry) AS lng,
        created_at`,
-    [name, description, lng, lat]
+    [name, description, lng, lat, risk_level]
   );
 
 const getAllSlopes = () =>
@@ -437,9 +459,13 @@ const getConversationById = (conversation_id) =>
 
 const getConversationsForUser = (user_id) =>
   query(
-    `SELECT c.*, gu.name as gov_name, sa.name as site_admin_name
+    `SELECT c.*,
+            gu.name as gov_name,
+            sa.name as site_admin_name,
+            gau.department as gov_department
      FROM conversations c
      LEFT JOIN users gu ON gu.id = c.gov_user_id
+     LEFT JOIN govt_authorities gau ON gau.user_id = c.gov_user_id
      LEFT JOIN users sa ON sa.id = c.site_admin_id
      WHERE c.gov_user_id = $1 OR c.site_admin_id = $1
      ORDER BY c.last_message_at DESC`,
@@ -623,6 +649,8 @@ module.exports = {
   getUserById,
   getUsersCount,
   getUsersByRole,
+  updateUserProfile,
+  updateUserPassword,
   createGovAuthority,
   getGovAuthorityByUser,
   createSlope,

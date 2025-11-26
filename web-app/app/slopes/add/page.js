@@ -17,6 +17,9 @@ export default function AddSlopePage() {
     description: '',
     lat: '',
     lng: '',
+    riskLevel: 'low',
+    latDirection: 'N',
+    lngDirection: 'E',
   })
 
   const handleSubmit = async (e) => {
@@ -73,35 +76,71 @@ export default function AddSlopePage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Latitude *
                     </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={formData.lat}
-                      onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
-                      required
-                      placeholder="e.g., 20.5937"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="flex space-x-2">
+                      <select
+                        value={formData.latDirection}
+                        onChange={(e) => setFormData({ ...formData, latDirection: e.target.value })}
+                        className="border border-gray-300 rounded-lg px-3"
+                      >
+                        <option value="N">N</option>
+                        <option value="S">S</option>
+                      </select>
+                      <input
+                        type="number"
+                        step="any"
+                        value={formData.lat}
+                        onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
+                        required
+                        placeholder="e.g., 20.5937"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Longitude *
                     </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={formData.lng}
-                      onChange={(e) => setFormData({ ...formData, lng: e.target.value })}
-                      required
-                      placeholder="e.g., 78.9629"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="flex space-x-2">
+                      <select
+                        value={formData.lngDirection}
+                        onChange={(e) => setFormData({ ...formData, lngDirection: e.target.value })}
+                        className="border border-gray-300 rounded-lg px-3"
+                      >
+                        <option value="E">E</option>
+                        <option value="W">W</option>
+                      </select>
+                      <input
+                        type="number"
+                        step="any"
+                        value={formData.lng}
+                        onChange={(e) => setFormData({ ...formData, lng: e.target.value })}
+                        required
+                        placeholder="e.g., 78.9629"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Risk Level
+                  </label>
+                  <select
+                    value={formData.riskLevel}
+                    onChange={(e) => setFormData({ ...formData, riskLevel: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
                 </div>
 
                 <div className="flex space-x-4">

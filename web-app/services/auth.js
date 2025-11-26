@@ -42,6 +42,14 @@ export const authService = {
     return response.data
   },
 
+  async updateProfile(payload) {
+    const response = await api.put('/auth/me', payload)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('user', JSON.stringify(response.data.data))
+    }
+    return response.data
+  },
+
   logout() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token')

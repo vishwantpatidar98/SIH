@@ -17,6 +17,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [creating, setCreating] = useState(false)
+  const [departmentFilter, setDepartmentFilter] = useState('all')
 
   useEffect(() => {
     if (hasAccess) {
@@ -59,6 +60,15 @@ export default function MessagesPage() {
   if (!hasAccess) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>
   }
+
+  const departmentOptions = Array.from(
+    new Set(participants.map((p) => p.department || 'General'))
+  )
+
+  const filteredParticipants = participants.filter((participant) => {
+    if (departmentFilter === 'all') return true
+    return (participant.department || 'General') === departmentFilter
+  })
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -109,6 +119,11 @@ export default function MessagesPage() {
                             <p className="font-semibold text-gray-800">
                               {conversation.site_admin_name || conversation.gov_name}
                             </p>
+                            {conversation.gov_department && (
+                              <p className="text-xs text-gray-500">
+                                {conversation.gov_department}
+                              </p>
+                            )}
                             <p className="text-xs text-gray-500">
                               Updated {new Date(conversation.last_message_at).toLocaleString()}
                             </p>
@@ -126,6 +141,25 @@ export default function MessagesPage() {
                 subtitle="Select a counterpart and send your first message"
               >
                 <form className="space-y-4" onSubmit={handleStartConversation}>
+                  {user?.role_name === 'site_admin' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Filter by sub-role
+                      </label>
+                      <select
+                        value={departmentFilter}
+                        onChange={(e) => setDepartmentFilter(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {departmentOptions.map((dept) => (
+                          <option key={dept} value={dept}>
+                            {dept}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {user?.role_name === 'site_admin' ? 'Government Authority' : 'Site Admin'}
@@ -137,9 +171,10 @@ export default function MessagesPage() {
                       required
                     >
                       <option value="">Select recipient...</option>
-                      {participants.map((participant) => (
+                      {filteredParticipants.map((participant) => (
                         <option key={participant.id} value={participant.id}>
                           {participant.name} — {participant.email}
+                          {participant.department ? ` (${participant.department})` : ''}
                         </option>
                       ))}
                     </select>

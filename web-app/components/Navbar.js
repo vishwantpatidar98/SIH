@@ -4,12 +4,15 @@ import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '../hooks/useAuth'
 import NotificationCenter from './NotificationCenter'
+import LanguageSwitcher from './LanguageSwitcher'
+import { useLanguage } from '../hooks/useLanguage'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const { t } = useLanguage()
 
   const handleLogout = () => {
     logout()
@@ -32,20 +35,25 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="bg-gradient-to-r from-blue-600 to-blue-800 shadow-lg h-16 flex items-center justify-between px-6 text-white">
-      <div className="flex items-center space-x-4">
-        <div className="text-xl font-bold">🛡️ SIH Rockfall Detection</div>
-        {pathname !== '/dashboard' && (
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="text-sm hover:underline"
-          >
-            Dashboard
-          </button>
-        )}
+    <nav className="bg-gradient-to-b from-blue-700 via-blue-600 to-blue-700 shadow-lg flex flex-col text-white">
+      <div className="flex flex-wrap items-center justify-between px-6 py-2 text-[13px] font-semibold tracking-wide">
+        <span>{t('navTitle')}</span>
+        <LanguageSwitcher />
       </div>
+      <div className="h-14 flex items-center justify-between px-6 border-t border-white/10">
+        <div className="flex items-center space-x-4">
+          <div className="text-xl font-bold">🛡️ SIH Rockfall Detection</div>
+          {pathname !== '/dashboard' && (
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="text-sm hover:underline"
+            >
+              Dashboard
+            </button>
+          )}
+        </div>
 
-      <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4">
         <NotificationCenter />
 
         {/* User Menu */}

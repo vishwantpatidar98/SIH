@@ -4,13 +4,22 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authService } from '../../../services/auth'
 
+const ROLE_OPTIONS = [
+  { id: 1, label: 'Field Worker', value: 1 },
+  { id: 2, label: 'Site Admin', value: 2 },
+  { id: 3, label: 'Government Authority', value: 3 },
+]
+
+const GOV_SUBROLES = ['Police', 'Fire & Rescue', 'Health', 'Disaster Response', 'Other']
+
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
-    roleId: 5   // Default = Citizen
+    roleId: ROLE_OPTIONS[0].value,
+    department: GOV_SUBROLES[0],
   })
 
   const [error, setError] = useState('')
@@ -37,7 +46,14 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      const res = await authService.register(formData)
+      const payload = {
+        ...formData,
+        roleId: Number(formData.roleId),
+      }
+      if (payload.roleId !== 3) {
+        delete payload.department
+      }
+      const res = await authService.register(payload)
       if (res.success) {
         router.push('/auth/login')
       }
@@ -105,11 +121,30 @@ export default function RegisterPage() {
             className="border p-2 w-full rounded mb-3 text-black"
             required
           >
-            <option value="1">super_admin</option>
-            <option value="2">site_admin</option>
-            <option value="3">field_worker</option>
-            <option value="4">gov_authority</option>
+            {ROLE_OPTIONS.map((role) => (
+              <option key={role.value} value={role.value}>
+                {role.label}
+              </option>
+            ))}
           </select>
+
+          {Number(formData.roleId) === 3 && (
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-2">Government Sub Role</label>
+              <select
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                className="border p-2 w-full rounded text-black"
+                required
+              >
+                {GOV_SUBROLES.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <button
             type="submit"

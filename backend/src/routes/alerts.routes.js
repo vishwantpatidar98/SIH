@@ -13,6 +13,13 @@ router.post(
 );
 
 router.post(
+  '/sos',
+  requireAuth,
+  requireRole('FIELD_WORKER'),
+  alertsController.raiseSOS
+);
+
+router.post(
   '/:alertId/acknowledge',
   requireAuth,
   requireRole('SITE_ADMIN', 'SUPER_ADMIN', 'GOV_AUTHORITY'),

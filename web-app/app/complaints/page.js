@@ -64,6 +64,18 @@ export default function ComplaintsPage() {
       key: 'created_at',
       render: (val) => new Date(val).toLocaleString(),
     },
+    {
+      header: 'Action',
+      key: 'action',
+      render: (_, row) => (
+        <button
+          onClick={() => router.push(`/complaints/${row.id}`)}
+          className="text-sm text-blue-600 hover:text-blue-800 font-semibold"
+        >
+          View Details
+        </button>
+      ),
+    },
   ]
 
   if (loading) {
@@ -106,7 +118,6 @@ export default function ComplaintsPage() {
               <Table
                 columns={columns}
                 data={complaints}
-                onRowClick={(row) => router.push(`/complaints/${row.id}`)}
                 emptyMessage="No complaints found"
               />
             </Card>

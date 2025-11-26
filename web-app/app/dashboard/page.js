@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '../../components/Navbar'
 import Sidebar from '../../components/Sidebar'
@@ -11,10 +11,14 @@ import AlertsPanel from './AlertsPanel'
 import SensorCharts from './SensorCharts'
 import CameraFeed from './CameraFeed'
 import { useAuth } from '../../hooks/useAuth'
+import { alertsService } from '../../services/alerts'
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const [sosMessage, setSosMessage] = useState('')
+  const [sendingSOS, setSendingSOS] = useState(false)
+  const [sosStatus, setSosStatus] = useState('')
 
   // Get user role for conditional rendering
   const isWorker = user?.role_name === 'field_worker'
@@ -57,8 +61,8 @@ export default function DashboardPage() {
 
           {/* Quick Actions for Workers */}
           {isWorker && (
-            <div className="mb-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
-              <div className="flex justify-between items-center">
+            <div className="mb-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white space-y-4">
+              <div className="flex flex-wrap justify-between items-center gap-4">
                 <div>
                   <h2 className="text-xl font-bold mb-2">⚠️ See Something Dangerous?</h2>
                   <p className="text-blue-100">Report rockfall risks, cracks, or loose rocks immediately</p>
@@ -69,6 +73,47 @@ export default function DashboardPage() {
                 >
                   📸 Report Issue
                 </button>
+              </div>
+
+              <div className="bg-white/10 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="font-semibold">SOS / Emergency Broadcast</p>
+                    <p className="text-xs text-blue-100">Notifies Site Admins & Govt Authorities instantly</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (sendingSOS) return
+                      try {
+                        setSendingSOS(true)
+                        setSosStatus('')
+                        await alertsService.sendSOS({ message: sosMessage })
+                        setSosStatus('SOS sent successfully. Stay safe, help is on the way.')
+                        setSosMessage('')
+                      } catch (err) {
+                        setSosStatus(err.message || 'Failed to send SOS')
+                      } finally {
+                        setSendingSOS(false)
+                      }
+                    }}
+                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold disabled:opacity-50"
+                    disabled={sendingSOS}
+                  >
+                    {sendingSOS ? 'Sending...' : '🚨 Send SOS'}
+                  </button>
+                </div>
+                <textarea
+                  value={sosMessage}
+                  onChange={(e) => setSosMessage(e.target.value)}
+                  placeholder="Describe your emergency (location, severity)..."
+                  className="w-full mt-2 rounded-lg px-3 py-2 text-gray-800"
+                  rows={2}
+                />
+                {sosStatus && (
+                  <p className="text-xs mt-2 text-blue-50">
+                    {sosStatus}
+                  </p>
+                )}
               </div>
             </div>
           )}

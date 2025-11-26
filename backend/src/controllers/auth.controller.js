@@ -6,7 +6,11 @@ const {
   getUserByEmail,
   getRoleById,
   getRoleByName,
-  getUsersCount
+  getUsersCount,
+  createGovAuthority,
+  updateUserProfile,
+  updateUserPassword,
+  getUserById
 } = require('../models/queries');
 const config = require('../config/env');
 
@@ -20,7 +24,7 @@ const PUBLIC_ROLES = ['site_admin', 'field_worker', 'gov_authority'];
 
 const register = async (req, res, next) => {
   try {
-    const { roleId = null, name, email, phone, password } = req.body;
+    const { roleId = null, name, email, phone, password, department = null } = req.body;
 
     const existingUser = await getUserByEmail(email);
     if (existingUser.rowCount > 0) {
@@ -72,7 +76,13 @@ const register = async (req, res, next) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const createdUser = await createUser(targetRole.id, name, email, phone, passwordHash);
-    const user = sanitizeUser(createdUser.rows[0]);
+    const userRecord = createdUser.rows[0];
+
+    if (targetRole.name === 'gov_authority') {
+      await createGovAuthority(userRecord.id, department || 'General', null);
+    }
+
+    const user = sanitizeUser(userRecord);
     user.role_name = targetRole.name;
 
     return res.status(201).json({
@@ -133,9 +143,53 @@ const login = async (req, res, next) => {
   }
 };
 
+const updateProfile = async (req, res, next) => {
+  try {
+    const { name = null, phone = null, currentPassword = null, newPassword = null } = req.body;
+
+    const userResult = await getUserById(req.user.id);
+    if (userResult.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Current password required to set a new password'
+        });
+      }
+      const isValid = await bcrypt.compare(currentPassword, userResult.rows[0].password_hash);
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Current password is incorrect'
+        });
+      }
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      await updateUserPassword(req.user.id, passwordHash);
+    }
+
+    const updatedProfile = await updateUserProfile(req.user.id, name, phone);
+    const updatedUser = sanitizeUser(updatedProfile.rows[0]);
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedUser
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
-  login
+  login,
+  updateProfile
 };
 
 

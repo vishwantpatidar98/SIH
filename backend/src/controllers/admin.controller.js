@@ -72,8 +72,19 @@ const listSlopes = async (req, res, next) => {
 
 const createSlopeController = async (req, res, next) => {
   try {
-    const { name, description, lat, lng } = req.body;
-    const created = await createSlope(name, description, lat, lng);
+    const { name, description, lat, lng, riskLevel = 'low', latDirection = 'N', lngDirection = 'E' } = req.body;
+
+    const parseCoord = (value, direction, negativeDir) => {
+      if (value === undefined || value === null || value === '') return null;
+      const num = Number(value);
+      if (Number.isNaN(num)) return null;
+      return direction === negativeDir ? -Math.abs(num) : Math.abs(num);
+    };
+
+    const normalizedLat = parseCoord(lat, latDirection?.toUpperCase(), 'S');
+    const normalizedLng = parseCoord(lng, lngDirection?.toUpperCase(), 'W');
+
+    const created = await createSlope(name, description, normalizedLat, normalizedLng, riskLevel);
     return res.status(201).json({
       success: true,
       data: created.rows[0]

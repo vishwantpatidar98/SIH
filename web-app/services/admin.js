@@ -16,8 +16,10 @@ export const adminService = {
     return response.data.data || []
   },
 
-  async getTasks() {
-    const response = await api.get('/admin/tasks')
+  async getTasks(status) {
+    const response = await api.get('/admin/tasks', {
+      params: status ? { status } : {},
+    })
     return response.data.data || []
   },
 

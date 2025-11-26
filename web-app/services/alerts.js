@@ -21,5 +21,10 @@ export const alertsService = {
     const response = await api.post(`/alerts/${alertId}/acknowledge`)
     return response.data.data
   },
+
+  async sendSOS(payload) {
+    const response = await api.post('/alerts/sos', payload)
+    return response.data.data
+  },
 }
 
