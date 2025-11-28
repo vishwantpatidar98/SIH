@@ -1,5 +1,7 @@
+import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import LoginScreen from '../screens/LoginScreen'
+import { COLORS } from '../utils/constants'
 
 const Stack = createNativeStackNavigator()
 
@@ -7,12 +9,13 @@ export default function AuthNavigator({ onLogin }) {
   return (
     <Stack.Navigator
       screenOptions={{
-        animation: 'fade',
         headerShown: false,
+        contentStyle: { backgroundColor: COLORS.background },
       }}
     >
-      <Stack.Screen name="Login">{(props) => <LoginScreen {...props} onLogin={onLogin} />}</Stack.Screen>
+      <Stack.Screen name="Login">
+        {(props) => <LoginScreen {...props} onLogin={onLogin} />}
+      </Stack.Screen>
     </Stack.Navigator>
   )
 }
-

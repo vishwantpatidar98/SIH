@@ -10,8 +10,7 @@
     "newArchEnabled": true,
     "platforms": [
       "ios",
-      "android",
-      "web"
+      "android"
     ],
     "splash": {
       "resizeMode": "contain",
@@ -32,10 +31,6 @@
         "backgroundColor": "#0f172a"
       },
       "package": "com.sih.rockfall"
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static"
     },
     "extra": {
       "eas": {

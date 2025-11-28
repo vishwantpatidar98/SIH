@@ -4,16 +4,42 @@ import { API_URL } from '../utils/constants'
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 })
 
-api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('sih_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+// Request interceptor - attach token
+api.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await AsyncStorage.getItem('sih_token')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+    } catch (error) {
+      console.error('Error getting token:', error)
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
   }
-  return config
-})
+)
+
+// Response interceptor - handle errors
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      await AsyncStorage.removeItem('sih_token')
+      await AsyncStorage.removeItem('sih_user')
+    }
+    return Promise.reject(error)
+  }
+)
 
 export const setAuthToken = async (token) => {
   if (token) {
@@ -23,26 +49,7 @@ export const setAuthToken = async (token) => {
 
 export const clearAuthToken = async () => {
   await AsyncStorage.removeItem('sih_token')
-}
-
-export const authService = {
-  login: (payload) => api.post('/auth/login', payload),
-  profile: () => api.get('/users/me'),
-}
-
-export const alertsService = {
-  getLatest: () => api.get('/alerts'),
-}
-
-export const complaintsService = {
-  create: (payload) => api.post('/complaints', payload, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
-}
-
-export const mlService = {
-  predict: (payload) => api.post('/ml/predict', payload),
+  await AsyncStorage.removeItem('sih_user')
 }
 
 export default api
-

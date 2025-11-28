@@ -16,5 +16,30 @@ export const COLORS = {
   warning: '#facc15',
   success: '#22c55e',
   surface: '#1e293b',
+  background: '#0a0e1a',
+  text: '#ffffff',
+  textSecondary: '#94a3b8',
+  border: '#1e293b',
+}
+
+export const RISK_LEVELS = {
+  low: { label: 'Low', color: '#22c55e', threshold: 0.35 },
+  medium: { label: 'Medium', color: '#facc15', threshold: 0.6 },
+  high: { label: 'High', color: '#f97316', threshold: 0.75 },
+  imminent: { label: 'Imminent', color: '#ef4444', threshold: 1.0 },
+}
+
+export const ROLES = {
+  FIELD_WORKER: 'field_worker',
+  SITE_ADMIN: 'site_admin',
+  GOV_AUTHORITY: 'gov_authority',
+  SUPER_ADMIN: 'super_admin',
+}
+
+export const getRiskLevel = (score) => {
+  if (score >= RISK_LEVELS.imminent.threshold) return RISK_LEVELS.imminent
+  if (score >= RISK_LEVELS.high.threshold) return RISK_LEVELS.high
+  if (score >= RISK_LEVELS.medium.threshold) return RISK_LEVELS.medium
+  return RISK_LEVELS.low
 }
 

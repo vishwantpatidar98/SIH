@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { alertsService, mlService } from '../services/api'
+import { RefreshControl, ScrollView, StyleSheet, Text, View, TouchableOpacity } from 'react-native'
+import { alertsService } from '../services/alerts'
 import AlertCard from '../components/AlertCard'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import { useNetwork } from '../hooks/useNetwork'
@@ -15,30 +15,20 @@ export default function HomeScreen() {
 
   const loadAlerts = async () => {
     try {
-      const { data } = await alertsService.getLatest()
+      const data = await alertsService.getAll()
       setAlerts(data || [])
     } catch (error) {
       console.warn('Failed to load alerts', error)
     }
   }
 
-  const loadPredictionStatus = async () => {
-    try {
-      const { data } = await mlService.predict({ ping: true })
-      setPredictionMessage(data?.message || predictionMessage)
-    } catch (error) {
-      setPredictionMessage('ML service placeholder — identical to the web dashboard. Results will appear once FastAPI is wired.')
-    }
-  }
-
   useEffect(() => {
     loadAlerts()
-    loadPredictionStatus()
   }, [])
 
   const onRefresh = async () => {
     setRefreshing(true)
-    await Promise.all([loadAlerts(), loadPredictionStatus()])
+    await loadAlerts()
     setRefreshing(false)
   }
 

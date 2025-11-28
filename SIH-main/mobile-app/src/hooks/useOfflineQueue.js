@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { flushQueue, setupOfflineQueue } from '../services/offlineQueue'
+import { flushQueue, setupOfflineQueue, getQueueCount } from '../services/offlineQueue'
 import { useNetwork } from './useNetwork'
 
 const OfflineQueueContext = createContext({
@@ -13,19 +13,26 @@ export const OfflineQueueProvider = ({ children }) => {
   const [pending, setPending] = useState(0)
   const [lastSync, setLastSync] = useState(null)
 
+  const updatePendingCount = async () => {
+    const count = await getQueueCount()
+    setPending(count)
+  }
+
   const refresh = async () => {
     await setupOfflineQueue()
     try {
       await flushQueue()
+      await updatePendingCount()
       setLastSync(new Date().toISOString())
-      setPending(0)
     } catch (error) {
       console.warn('Offline queue refresh failed', error)
     }
   }
 
   useEffect(() => {
-    setupOfflineQueue()
+    setupOfflineQueue().then(() => {
+      updatePendingCount()
+    })
   }, [])
 
   useEffect(() => {

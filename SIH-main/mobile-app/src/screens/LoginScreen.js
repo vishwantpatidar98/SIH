@@ -1,48 +1,86 @@
-import { useState } from 'react'
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
-import { authService } from '../services/api'
-import { setAuthToken } from '../services/api'
+import React, { useState } from 'react'
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+} from 'react-native'
+import { authService } from '../services/auth'
+import { COLORS } from '../utils/constants'
 
 export default function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const submit = async () => {
+  const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Validation', 'Email and password required')
+      Alert.alert('Validation', 'Email and password are required')
       return
     }
+
     setLoading(true)
     try {
-      const { data } = await authService.login({ email, password })
-      await setAuthToken(data?.token)
-      onLogin?.(data)
+      const result = await authService.login(email, password)
+      if (result.success) {
+        onLogin?.(result.data)
+      }
     } catch (error) {
-      console.error('Login failed', error)
-      Alert.alert('Login failed', error?.response?.data?.message || 'Check credentials')
+      Alert.alert('Login Failed', error.message || 'Invalid credentials')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.card}>
-        <Text style={styles.title}>SIH Field Login</Text>
-        <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#64748b" autoCapitalize="none" value={email} onChangeText={setEmail} />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#64748b"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-        <Text style={[styles.button, loading && styles.disabled]} onPress={loading ? undefined : submit}>
-          {loading ? 'Signing in...' : 'Login'}
-        </Text>
-        <Text style={styles.note}>Uses the same `/api/auth/login` endpoint as the web dashboard.</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={styles.content}>
+        <Text style={styles.title}>GeoGuard</Text>
+        <Text style={styles.subtitle}>Mine Safety & Monitoring</Text>
+
+        <View style={styles.form}>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor={COLORS.textSecondary}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            editable={!loading}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor={COLORS.textSecondary}
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            editable={!loading}
+            onSubmitEditing={handleLogin}
+          />
+
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={COLORS.primary} />
+            ) : (
+              <Text style={styles.buttonText}>Login</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   )
@@ -51,45 +89,52 @@ export default function LoginScreen({ onLogin }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    backgroundColor: '#0b1120',
-    padding: 20,
+    backgroundColor: COLORS.background,
   },
-  card: {
-    backgroundColor: '#111c30',
+  content: {
+    flex: 1,
+    justifyContent: 'center',
     padding: 24,
-    borderRadius: 16,
-    gap: 12,
   },
   title: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: COLORS.text,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 48,
+  },
+  form: {
+    gap: 16,
   },
   input: {
-    backgroundColor: '#0f172a',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    color: '#fff',
+    color: COLORS.text,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   button: {
-    backgroundColor: '#38bdf8',
-    color: '#0f172a',
-    textAlign: 'center',
-    paddingVertical: 14,
+    backgroundColor: COLORS.accent,
     borderRadius: 12,
-    fontWeight: '700',
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 8,
   },
-  disabled: {
+  buttonDisabled: {
     opacity: 0.6,
   },
-  note: {
-    color: '#94a3b8',
-    fontSize: 12,
-    textAlign: 'center',
+  buttonText: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: '600',
   },
 })
-
